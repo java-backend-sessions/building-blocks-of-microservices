@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JVM Architecture: Heap and Metadata</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .slide {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #0d47a1;
+            text-align: center;
+            margin-top: 0;
+        }
+        h2 {
+            color: #1976d2;
+            border-bottom: 2px solid #bbdefb;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #1565c0;
+        }
+        .diagram {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #e3f2fd;
+            color: #0d47a1;
+        }
+        tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+        .highlight {
+            background-color: #fff9c4;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .note {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .warning {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .nav-button {
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #0d47a1;
+        }
+        .nav-button:disabled {
+            background-color: #bbdefb;
+            cursor: not-allowed;
+        }
+        #slide-indicator {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="presentation">
+        <!-- Slide 1: Introduction -->
+        <div class="slide" id="slide1">
+            <h1>JVM Architecture: Deep Dive into Memory Management</h1>
+            <h2>Introduction</h2>
+            <p>The Java Virtual Machine (JVM) is the cornerstone of Java's "write once, run anywhere" philosophy. It provides an abstraction layer between Java applications and the underlying hardware, enabling platform independence.</p>
+            <div class="diagram">
+                <img src="/api/placeholder/700/400" alt="JVM Architecture Overview" />
+            </div>
+            <div class="note">
+                <p><strong>Note:</strong> The JVM specification defines the abstract machine, but implementations may vary. This presentation focuses on the HotSpot JVM, which is the most widely used implementation.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: JVM Architecture Overview -->
+        <div class="slide" id="slide2">
+            <h2>JVM Architecture Overview</h2>
+            <p>The JVM architecture consists of several interconnected components that work together to execute Java bytecode:</p>
+            <div class="diagram">
+                <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                    <!-- JVM Container -->
+                    <rect x="50" y="50" width="700" height="400" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="10" />
+                    <text x="400" y="80" text-anchor="middle" font-weight="bold" font-size="18">Java Virtual Machine (JVM)</text>
+                    
+                    <!-- Class Loader Subsystem -->
+                    <rect x="80" y="100" width="180" height="80" fill="#bbdefb" stroke="#0d47a1" stroke-width="2" rx="5" />
+                    <text x="170" y="140" text-anchor="middle" font-weight="bold">Class Loader Subsystem</text>
+                    
+                    <!-- Runtime Data Areas -->
+                    <rect x="80" y="200" width="640" height="220" fill="#e1f5fe" stroke="#0288d1" stroke-width="2" rx="5" />
+                    <text x="170" y="220" font-weight="bold">Runtime Data Areas</text>
+                    
+                    <!-- Method Area -->
+                    <rect x="100" y="240" width="180" height="60" fill="#b3e5fc" stroke="#0288d1" stroke-width="2" rx="5" />
+                    <text x="190" y="275" text-anchor="middle" font-weight="bold">Method Area</text>
+                    <text x="190" y="290" text-anchor="middle" font-size="12">(Metadata)</text>
+                    
+                    <!-- Heap -->
+                    <rect x="300" y="240" width="180" height="160" fill="#b3e5fc" stroke="#0288d1" stroke-width="2" rx="5" />
+                    <text x="390" y="270" text-anchor="middle" font-weight="bold">Heap</text>
+                    
+                    <!-- Young Generation -->
+                    <rect x="310" y="290" width="160" height="40" fill="#c8e6c9" stroke="#4caf50" stroke-width="1" rx="3" />
+                    <text x="390" y="315" text-anchor="middle" font-size="12">Young Generation</text>
+                    
+                    <!-- Old Generation -->
+                    <rect x="310" y="340" width="160" height="40" fill="#dcedc8" stroke="#8bc34a" stroke-width="1" rx="3" />
+                    <text x="390" y="365" text-anchor="middle" font-size="12">Old Generation</text>
+                    
+                    <!-- Stack Areas -->
+                    <rect x="500" y="240" width="200" height="60" fill="#b3e5fc" stroke="#0288d1" stroke-width="2" rx="5" />
+                    <text x="600" y="275" text-anchor="middle" font-weight="bold">JVM Stacks</text>
+                    
+                    <!-- PC Registers -->
+                    <rect x="500" y="310" width="95" height="40" fill="#b3e5fc" stroke="#0288d1" stroke-width="2" rx="5" />
+                    <text x="548" y="335" text-anchor="middle" font-size="12">PC Registers</text>
+                    
+                    <!-- Native Method Stacks -->
+                    <rect x="605" y="310" width="95" height="40" fill="#b3e5fc" stroke="#0288d1" stroke-width="2" rx="5" />
+                    <text x="652" y="335" text-anchor="middle" font-size="12">Native Method Stacks</text>
+                    
+                    <!-- Execution Engine -->
+                    <rect x="300" y="100" width="180" height="80" fill="#bbdefb" stroke="#0d47a1" stroke-width="2" rx="5" />
+                    <text x="390" y="140" text-anchor="middle" font-weight="bold">Execution Engine</text>
+                    
+                    <!-- Native Method Interface -->
+                    <rect x="500" y="100" width="180" height="80" fill="#bbdefb" stroke="#0d47a1" stroke-width="2" rx="5" />
+                    <text x="590" y="140" text-anchor="middle" font-weight="bold">Native Method Interface</text>
+                </svg>
+            </div>
+            <ul>
+                <li><strong>Class Loader Subsystem:</strong> Loads, links, and initializes class files</li>
+                <li><strong>Runtime Data Areas:</strong> Various memory areas used during execution</li>
+                <li><strong>Execution Engine:</strong> Executes the bytecode instructions</li>
+                <li><strong>Native Method Interface:</strong> Connects to native libraries</li>
+            </ul>
+        </div>
+
+        <!-- Slide 3: JVM Heap -->
+        <div class="slide" id="slide3">
+            <h2>The JVM Heap</h2>
+            <p>The heap is the runtime data area where objects are allocated. It is created at JVM startup and shared among all Java threads.</p>
+            <div class="diagram">
+                <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Heap Container -->
+                    <rect x="50" y="50" width="700" height="300" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="10" />
+                    <text x="400" y="80" text-anchor="middle" font-weight="bold" font-size="18">Java Heap Memory</text>
+                    
+                    <!-- Young Generation -->
+                    <rect x="80" y="100" width="640" height="120" fill="#c8e6c9" stroke="#388e3c" stroke-width="2" rx="5" />
+                    <text x="180" y="120" font-weight="bold">Young Generation</text>
+                    
+                    <!-- Eden -->
+                    <rect x="100" y="130" width="380" height="70" fill="#a5d6a7" stroke="#388e3c" stroke-width="1" rx="5" />
+                    <text x="290" y="170" text-anchor="middle" font-weight="bold">Eden Space</text>
+                    
+                    <!-- Survivor 0 -->
+                    <rect x="500" y="130" width="100" height="70" fill="#a5d6a7" stroke="#388e3c" stroke-width="1" rx="5" />
+                    <text x="550" y="170" text-anchor="middle" font-weight="bold">S0</text>
+                    
+                    <!-- Survivor 1 -->
+                    <rect x="610" y="130" width="100" height="70" fill="#a5d6a7" stroke="#388e3c" stroke-width="1" rx="5" />
+                    <text x="660" y="170" text-anchor="middle" font-weight="bold">S1</text>
+                    
+                    <!-- Old Generation -->
+                    <rect x="80" y="230" width="640" height="100" fill="#dcedc8" stroke="#689f38" stroke-width="2" rx="5" />
+                    <text x="180" y="255" font-weight="bold">Old Generation (Tenured)</text>
+                    
+                    <!-- Labels and descriptions -->
+                    <text x="290" y="280" text-anchor="middle">Long-lived objects are stored here after surviving multiple GC cycles</text>
+                    
+                    <!-- Objects -->
+                    <circle cx="150" cy="160" r="10" fill="#d32f2f" />
+                    <circle cx="180" cy="150" r="8" fill="#d32f2f" />
+                    <circle cx="210" cy="170" r="12" fill="#d32f2f" />
+                    <circle cx="240" cy="155" r="9" fill="#d32f2f" />
+                    <circle cx="270" cy="165" r="11" fill="#d32f2f" />
+                    <circle cx="300" cy="145" r="10" fill="#d32f2f" />
+                    <circle cx="330" cy="175" r="8" fill="#d32f2f" />
+                    <circle cx="360" cy="160" r="10" fill="#d32f2f" />
+                    <circle cx="520" cy="150" r="10" fill="#d32f2f" />
+                    <circle cx="540" cy="170" r="8" fill="#d32f2f" />
+                    <circle cx="630" cy="155" r="10" fill="#d32f2f" />
+                    <circle cx="650" cy="145" r="8" fill="#d32f2f" />
+                    
+                    <!-- Old gen objects -->
+                    <rect x="130" cy="260" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="160" cy="280" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="190" cy="270" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="220" cy="260" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="250" cy="280" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="280" cy="270" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="310" cy="260" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="340" cy="280" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="370" cy="270" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="400" cy="260" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="430" cy="280" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="460" cy="270" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="490" cy="260" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="520" cy="280" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="550" cy="270" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="580" cy="260" width="15" height="15" fill="#7b1fa2" />
+                    <rect x="610" cy="280" width="15" height="15" fill="#7b1fa2" />
+                </svg>
+            </div>
+            <h3>What's Stored in the Heap:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th>Contents</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Young Generation</strong></td>
+                        <td>Newly created objects</td>
+                        <td>Most objects die young, so this area is designed for frequent, efficient garbage collection</td>
+                    </tr>
+                    <tr>
+                        <td>Eden Space</td>
+                        <td>Brand new objects</td>
+                        <td>When objects are first created, they are allocated here</td>
+                    </tr>
+                    <tr>
+                        <td>Survivor Spaces (S0, S1)</td>
+                        <td>Objects that survived Eden collection</td>
+                        <td>Objects alternate between these spaces during minor GC cycles</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Old Generation</strong></td>
+                        <td>Long-lived objects</td>
+                        <td>Objects that survive multiple garbage collection cycles in the Young Generation are promoted here</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="note">
+                <p><strong>Key Point:</strong> All objects, their instance variables, arrays, and the data they contain reside in the heap. Everything that has state and identity in a Java program is stored here.</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Metadata (Method Area) -->
+        <div class="slide" id="slide4">
+            <h2>Metadata: The Method Area</h2>
+            <p>The Method Area (also historically called "PermGen" and now known as "Metaspace" in newer JVM versions) stores class metadata, code, and other permanent information.</p>
+            <div class="diagram">
+                <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Method Area Container -->
+                    <rect x="50" y="50" width="700" height="300" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="10" />
+                    <text x="400" y="80" text-anchor="middle" font-weight="bold" font-size="18">Method Area (Metaspace)</text>
+                    
+                    <!-- Class Metadata Section -->
+                    <rect x="80" y="100" width="310" height="230" fill="#bbdefb" stroke="#1976d2" stroke-width="2" rx="5" />
+                    <text x="235" y="120" text-anchor="middle" font-weight="bold" font-size="14">Class Metadata</text>
+                    
+                    <!-- Run-Time Constant Pool -->
+                    <rect x="410" y="100" width="310" height="110" fill="#bbdefb" stroke="#1976d2" stroke-width="2" rx="5" />
+                    <text x="565" y="120" text-anchor="middle" font-weight="bold" font-size="14">Run-Time Constant Pool</text>
+                    
+                    <!-- Method Code -->
+                    <rect x="410" y="220" width="310" height="110" fill="#bbdefb" stroke="#1976d2" stroke-width="2" rx="5" />
+                    <text x="565" y="240" text-anchor="middle" font-weight="bold" font-size="14">Method Code</text>
+                    
+                    <!-- Class metadata items -->
+                    <rect x="100" y="140" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="235" y="157" text-anchor="middle" font-size="12">Class Name, Superclass, Interfaces</text>
+                    
+                    <rect x="100" y="175" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="235" y="192" text-anchor="middle" font-size="12">Class Modifiers (public, final, etc.)</text>
+                    
+                    <rect x="100" y="210" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="235" y="227" text-anchor="middle" font-size="12">Field Information (names, types, modifiers)</text>
+                    
+                    <rect x="100" y="245" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="235" y="262" text-anchor="middle" font-size="12">Method Information (return types, params)</text>
+                    
+                    <rect x="100" y="280" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="235" y="297" text-anchor="middle" font-size="12">Method Modifiers & Annotations</text>
+                    
+                    <!-- Constant pool items -->
+                    <rect x="430" y="140" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="565" y="157" text-anchor="middle" font-size="12">String Literals</text>
+                    
+                    <rect x="430" y="175" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="565" y="192" text-anchor="middle" font-size="12">Numeric & Other Constants</text>
+                    
+                    <!-- Method code items -->
+                    <rect x="430" y="260" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="565" y="277" text-anchor="middle" font-size="12">Java Bytecode Instructions</text>
+                    
+                    <rect x="430" y="295" width="270" height="25" fill="#90caf9" stroke="#1976d2" stroke-width="1" rx="3" />
+                    <text x="565" y="312" text-anchor="middle" font-size="12">Exception Tables</text>
+                </svg>
+            </div>
+            <h3>What's Stored in the Method Area (Metaspace):</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Component</th>
+                        <th>What's Stored</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Class Metadata</strong></td>
+                        <td>Class structure information</td>
+                        <td>Fully qualified name, modifiers, immediate parent class</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>Field information</td>
+                        <td>Field names, types, modifiers, annotations</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>Method information</td>
+                        <td>Method signatures, return types, parameter types, annotations</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Run-Time Constant Pool</strong></td>
+                        <td>Symbolic references</td>
+                        <td>References to classes, fields, and methods</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>String literals</td>
+                        <td>String constants used in the code</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>Numeric literals</td>
+                        <td>Constants like int, long, float, double values</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Method Code</strong></td>
+                        <td>Bytecode</td>
+                        <td>The actual compiled Java bytecode instructions</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>Exception tables</td>
+                        <td>Information about exception handlers</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="warning">
+                <p><strong>Evolution Note:</strong> In JDK 8 and later, PermGen was replaced by Metaspace, which dynamically resizes and is allocated from native memory rather than the JVM heap.</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Heap vs Method Area Comparison -->
+        <div class="slide" id="slide5">
+            <h2>Heap vs. Method Area: Key Differences</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Characteristic</th>
+                        <th>Heap</th>
+                        <th>Method Area (Metaspace)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Purpose</strong></td>
+                        <td>Runtime storage for objects</td>
+                        <td>Storage for class structure and method code</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contents</strong></td>
+                        <td>Object instances, arrays, instance variables</td>
+                        <td>Class metadata, method bytecode, constant pool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lifetime</strong></td>
+                        <td>Objects can be collected at any time if unreferenced</td>
+                        <td>Class metadata lives as long as the class is loaded</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Memory Management</strong></td>
+                        <td>Managed by Garbage Collector</td>
+                        <td>Classes unloaded only under specific conditions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tuning Parameters</strong></td>
+                        <td>-Xms, -Xmx (min and max heap size)</td>
+                        <td>-XX:MetaspaceSize, -XX:MaxMetaspaceSize</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Memory Location (JDK 8+)</strong></td>
+                        <td>JVM memory</td>
+                        <td>Native memory (outside the heap)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="note">
+                <p><strong>Important:</strong> Static variables are a special case. While static variable declarations (metadata) are stored in the Method Area, the actual static variable values are stored on the heap in JDK 8+. Before JDK 7, they were stored in the PermGen space.</p>
+            </div>
+        </div>
+
+        <!-- Slide 6: Memory Issues and Tuning -->
+        <div class="slide" id="slide6">
+            <h2>Common Memory Issues and Tuning Options</h2>
+            <h3>Common Heap Issues:</h3>
+            <ul>
+                <li><strong>OutOfMemoryError: Java heap space</strong> - Heap is full and no more objects can be allocated</li>
+                <li><strong>Memory leaks</strong> - Objects that are no longer needed are still referenced</li>
+                <li><strong>Excessive garbage collection</strong> - Too many short-lived objects causing frequent GC pauses</li>
+            </ul>
+            <h3>Common Method Area Issues:</h3>
+            <ul>
+                <li><strong>OutOfMemoryError: Metaspace</strong> - Too many classes loaded</li>
+                <li><strong>Class loader leaks</strong> - Classes not being unloaded when no longer needed</li>
+            </ul>
+            <h3>JVM Memory Tuning Parameters:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>-Xms</td>
+                        <td>Initial heap size</td>
+                        <td>-Xms1g</td>
+                    </tr>
+                    <tr>
+                        <td>-Xmx</td>
+                        <td>Maximum heap size</td>
+                        <td>-Xmx4g</td>
+                    </tr>
+                    <tr>
+                        <td>-XX:NewRatio</td>
+                        <td>Ratio of young to old generation sizes</td>
+                        <td>-XX:NewRatio=2</td>
+                    </tr>
+                    <tr>
+                        <td>-XX:MetaspaceSize</td>
+                        <td>Initial metaspace size</td>
+                        <td>-XX:MetaspaceSize=256m</td>
+                    </tr>
+                    <tr>
+                        <td>-XX:MaxMetaspaceSize</td>
+                        <td>Maximum metaspace size</td>
+                        <td>-XX:MaxMetaspaceSize=512m</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="note">
+                <p><strong>Monitoring Tip:</strong> Tools like jstat, jmap, JConsole, VisualVM, and JMC can help monitor heap and metaspace usage and diagnose memory-related issues.</p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Summary and Conclusion -->
+        <div class="slide" id="slide7">
+            <h2>Summary: JVM Memory Architecture</h2>
+            <div class="diagram">
+                <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                    <!-- JVM Container -->
+                    <rect x="50" y="50" width="700" height="300" fill="#f5f5f5" stroke="#757575" stroke-width="2" rx="10" />
+                    <text x="400" y="80" text-anchor="middle" font-weight="bold" font-size="18">JVM Memory Model</text>
+                    
+                    <!-- Heap -->
+                    <rect x="80" y="110" width="320" height="220" fill="#e8f5e9" stroke="#4caf50" stroke-width="2" rx="5" />
+                    <text x="240" y="135" text-anchor="middle" font-weight="bold" font-size="16">Heap</text>
+                    
+                    <!-- Young Gen -->
+                    <rect x="100" y="150" width="280" height="70" fill="#c8e6c9" stroke="#388e3c" stroke-width="1" rx="5" />
+                    <text x="240" y="180" text-anchor="middle" font-weight="bold">Young Generation</text>
+                    
+                    <!-- Old Gen -->
+                    <rect x="100" y="230" width="280" height="80" fill="#dcedc8" stroke="#689f38" stroke-width="1" rx="5" />
+                    <text x="240" y="270" text-anchor="middle" font-weight="bold">Old Generation</text>
+                    
+                    <!-- Metaspace -->
+                    <rect x="420" y="110" width="320" height="220" fill="#e3f2fd" stroke="#1976d2" stroke-width="2" rx="5" />
+                    <text x="580" y="135" text-anchor="middle" font-weight="bold" font-size="16">Method Area (Metaspace)</text>
+                    
+                    <!-- Class Metadata -->
+                    <rect x="440" y="150" width="280" height="70" fill="#bbdefb" stroke="#1976d2" stroke-width="1" rx="5" />
+                    <text x="580" y="180" text-anchor="middle" font-weight="bold">Class Metadata</text>
+                    
+                    <!-- Method Code & Constant Pool -->
+                    <rect x="440" y="230" width="280" height="80" fill="#bbdefb" stroke="#1976d2" stroke-width="1" rx="5" />
+                    <text x="580" y="270" text-anchor="middle" font-weight="bold">Method Code & Constant Pool</text>
+                </svg>
+            </div>
+            
+            <h3>Key Takeaways:</h3>
+            <ul>
+                <li><strong>Heap:</strong> Stores all objects created during application execution
+                    <ul>
+                        <li>Object instances and their instance variables</li>
+                        <li>Arrays and array elements</li>
+                        <li>Static variable values (in modern JVMs)</li>
+                    </ul>
+                </li>
+                <li><strong>Method Area (Metaspace):</strong> Stores class-level information
+                    <ul>
+                        <li>Class structure information (fields, methods, constructors)</li>
+                        <li>Method and constructor bytecode</li>
+                        <li>Run-time constant pool (literals, symbolic references)</li>
+                        <li>Field and method data</li>
+                        <li>Method code</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="note">
+                <p><strong>Final Note:</strong> Understanding JVM memory architecture is crucial for diagnosing performance issues, memory leaks, and optimizing Java applications for production use.</p>
+            </div>
+        </div>
+
+        <!-- Slide 8: References -->
+        <div class="slide" id="slide8">
+            <h2>References and Further Reading</h2>
+            <ul>
+                <li>Oracle JVM Specification: <a href="https://docs.oracle.com/javase/specs/jvms/se17/html/index.html">https://docs.oracle.com/javase/specs/jvms/se17/html/index.html</a></li>
+                <li>HotSpot JVM Architecture: <a href="https://www.oracle.com/technetwork/java/whitepaper-135217.html">https://www.oracle.com/technetwork/java/whitepaper-135217.html</a></li>
+                <li>Understanding JVM Memory Model: <a href="https://www.baeldung.com/java-jvm-memory-model">https://www.baeldung.com/java-jvm-memory-model</a></li>
+                <li>Memory Management in the Java HotSpot Virtual Machine: <a href="https://www.oracle.com/technetwork/java/javase/memorymanagement-whitepaper-150215.pdf">https://www.oracle.com/technetwork/java/javase/memorymanagement-whitepaper-150215.pdf</a></li>
+                <li>Java Garbage Collection Handbook: <a href="https://plumbr.io/java-garbage-collection-handbook">https://plumbr.io/java-garbage-collection-handbook</a></li>
+            </ul>
+        </div>
+
+        <!-- Navigation buttons and slide indicator -->
+        <div class="button-container">
+            <button class="nav-button" id="prev-button" onclick="prevSlide()">Previous</button>
+            <button class="nav-button" id="next-button" onclick="nextSlide()">Next</button>
+        </div>
+        <div id="slide-indicator">Slide 1 of 8</div>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 8;
+        
+        // Show only the first slide initially
+        showSlide(currentSlide);
+        updateNavButtons();
+        
+        function showSlide(slideNum) {
+            // Hide all slides
+            const slides = document.querySelectorAll('.slide');
+            slides.forEach(slide => {
+                slide.style.display = 'none';
+            });
+            
+            // Show the current slide
+            document.getElementById('slide' + slideNum).style.display = 'block';
+            document.getElementById('slide-indicator').textContent = 'Slide ' + slideNum + ' of ' + totalSlides;
+        }
+        
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                showSlide(currentSlide);
+                updateNavButtons();
+            }
+        }
+        
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                showSlide(currentSlide);
+                updateNavButtons();
+            }
+        }
+        
+        function updateNavButtons() {
+            document.getElementById('prev-button').disabled = (currentSlide === 1);
+            document.getElementById('next-button').disabled = (currentSlide === totalSlides);
+        }
+    </script>
+</body>
+</html>
