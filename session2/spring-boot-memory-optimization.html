@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Memory Optimization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .slide {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #6db33f; /* Spring green */
+            text-align: center;
+            margin-top: 0;
+        }
+        h2 {
+            color: #6db33f;
+            border-bottom: 2px solid #c9e2b3;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #4e9a06;
+        }
+        .diagram {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f1f8e9; /* Light green */
+            color: #33691e;
+        }
+        tr:nth-child(even) {
+            background-color: #f5f5f5;
+        }
+        .highlight {
+            background-color: #dcedc8;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .note {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .warning {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .advantage {
+            background-color: #e8f5e9;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .disadvantage {
+            background-color: #ffebee;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .nav-button {
+            background-color: #6db33f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .nav-button:hover {
+            background-color: #5a9d33;
+        }
+        .nav-button:disabled {
+            background-color: #c5e1a5;
+            cursor: not-allowed;
+        }
+        #slide-indicator {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .bar-chart {
+            width: 600px;
+            height: 400px;
+            margin: 20px auto;
+        }
+        .bar {
+            height: 35px;
+            margin: 10px 0;
+            background-color: #6db33f;
+            position: relative;
+            border-radius: 3px;
+        }
+        .bar-label {
+            position: absolute;
+            left: 10px;
+            top: 8px;
+            color: white;
+            font-weight: bold;
+        }
+        .bar-value {
+            position: absolute;
+            right: -80px;
+            top: 8px;
+            color: #333;
+        }
+        .comp-container {
+            display: flex;
+            margin: 20px 0;
+            gap: 20px;
+        }
+        .comp-box {
+            flex: 1;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .spring-box {
+            background-color: #f1f8e9;
+            border: 2px solid #6db33f;
+        }
+        .manual-box {
+            background-color: #fff8e1;
+            border: 2px solid #ffc107;
+        }
+        .checkmark {
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .crossmark {
+            color: #f44336;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="presentation">
+        <!-- Slide 1: Introduction -->
+        <div class="slide" id="slide1">
+            <h1>Spring Boot Memory Optimization</h1>
+            <h2>Comparing Memory Footprint with Manual Framework Configuration</h2>
+            <div class="diagram">
+                <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Spring Boot side -->
+                    <rect x="50" y="50" width="270" height="200" fill="#f1f8e9" stroke="#6db33f" stroke-width="2" rx="10" />
+                    <text x="185" y="85" text-anchor="middle" font-weight="bold" font-size="18" fill="#6db33f">Spring Boot</text>
+                    
+                    <!-- Manual Configuration side -->
+                    <rect x="380" y="50" width="270" height="200" fill="#fff8e1" stroke="#ffc107" stroke-width="2" rx="10" />
+                    <text x="515" y="85" text-anchor="middle" font-weight="bold" font-size="18" fill="#ffa000">Manual Configuration</text>
+                    
+                    <!-- Heap usage comparison -->
+                    <rect x="80" y="110" width="210" height="30" fill="#c5e1a5" stroke="#6db33f" stroke-width="1" rx="5" />
+                    <text x="185" y="130" text-anchor="middle">Optimized Heap Usage</text>
+                    
+                    <rect x="410" y="110" width="210" height="50" fill="#ffe082" stroke="#ffa000" stroke-width="1" rx="5" />
+                    <text x="515" y="140" text-anchor="middle">Higher Heap Usage</text>
+                    
+                    <!-- Metaspace usage comparison -->
+                    <rect x="80" y="160" width="210" height="30" fill="#c5e1a5" stroke="#6db33f" stroke-width="1" rx="5" />
+                    <text x="185" y="180" text-anchor="middle">Optimized Metaspace</text>
+                    
+                    <rect x="410" y="180" width="210" height="50" fill="#ffe082" stroke="#ffa000" stroke-width="1" rx="5" />
+                    <text x="515" y="210" text-anchor="middle">Higher Metaspace Usage</text>
+                    
+                    <!-- Comparison arrow -->
+                    <line x1="340" y1="150" x2="360" y2="150" stroke="#333" stroke-width="2" />
+                    <polygon points="360,150 350,145 350,155" fill="#333" />
+                </svg>
+            </div>
+            <p>Spring Boot is designed with optimization in mind, offering significant improvements in memory usage compared to manually configuring individual frameworks and dependencies. This presentation explores how Spring Boot helps optimize both heap and metaspace memory usage in Java applications.</p>
+            <div class="note">
+                <p><strong>Note:</strong> Memory usage patterns can vary based on application complexity, but Spring Boot generally provides better defaults and optimization opportunities out of the box.</p>
+            </div>
+        </div>
+
+        <!-- Slide 2: Memory Challenges in Java Enterprise Applications -->
+        <div class="slide" id="slide2">
+            <h2>Memory Challenges in Java Enterprise Applications</h2>
+            <p>Before comparing Spring Boot with manual configuration approaches, let's understand the common memory challenges faced in Java enterprise applications:</p>
+            <div class="diagram">
+                <svg viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Central challenges bubble -->
+                    <ellipse cx="350" cy="175" rx="120" ry="70" fill="#f1f8e9" stroke="#6db33f" stroke-width="2" />
+                    <text x="350" y="175" text-anchor="middle" font-weight="bold">Memory Challenges</text>
+                    
+                    <!-- Challenge bubbles -->
+                    <circle cx="150" cy="100" r="70" fill="#ffebee" stroke="#f44336" stroke-width="2" />
+                    <text x="150" y="90" text-anchor="middle" font-weight="bold">Dependency</text>
+                    <text x="150" y="110" text-anchor="middle" font-weight="bold">Bloat</text>
+                    
+                    <circle cx="150" cy="250" r="70" fill="#ffebee" stroke="#f44336" stroke-width="2" />
+                    <text x="150" y="240" text-anchor="middle" font-weight="bold">Class</text>
+                    <text x="150" y="260" text-anchor="middle" font-weight="bold">Loading</text>
+                    
+                    <circle cx="550" cy="100" r="70" fill="#ffebee" stroke="#f44336" stroke-width="2" />
+                    <text x="550" y="90" text-anchor="middle" font-weight="bold">Bean</text>
+                    <text x="550" y="110" text-anchor="middle" font-weight="bold">Duplication</text>
+                    
+                    <circle cx="550" cy="250" r="70" fill="#ffebee" stroke="#f44336" stroke-width="2" />
+                    <text x="550" y="240" text-anchor="middle" font-weight="bold">Configuration</text>
+                    <text x="550" y="260" text-anchor="middle" font-weight="bold">Overhead</text>
+                    
+                    <!-- Connecting lines -->
+                    <line x1="230" y1="140" x2="320" y2="175" stroke="#333" stroke-width="2" />
+                    <line x1="230" y1="210" x2="320" y2="175" stroke="#333" stroke-width="2" />
+                    <line x1="470" y1="140" x2="380" y2="175" stroke="#333" stroke-width="2" />
+                    <line x1="470" y1="210" x2="380" y2="175" stroke="#333" stroke-width="2" />
+                </svg>
+            </div>
+            <h3>Key Memory Challenges:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Challenge</th>
+                        <th>Impact on Heap</th>
+                        <th>Impact on Metaspace</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Dependency Bloat</strong></td>
+                        <td>Unused objects and cached data consuming heap memory</td>
+                        <td>Unnecessary classes loaded into metaspace</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Class Loading Overhead</strong></td>
+                        <td>Minimal direct impact</td>
+                        <td>Excessive class metadata consuming metaspace</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bean Duplication</strong></td>
+                        <td>Multiple instances of similar objects wasting heap</td>
+                        <td>Minimal direct impact</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Configuration Overhead</strong></td>
+                        <td>Configuration objects and proxies consuming heap</td>
+                        <td>Configuration classes and XML parsers in metaspace</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="warning">
+                <p><strong>Key Insight:</strong> Manual integration of frameworks often leads to inefficient memory usage due to duplicate functionality, excessive configuration, and suboptimal defaults.</p>
+            </div>
+        </div>
+
+        <!-- Slide 3: Spring Boot's Approach to Memory Optimization -->
+        <div class="slide" id="slide3">
+            <h2>Spring Boot's Approach to Memory Optimization</h2>
+            <p>Spring Boot addresses memory challenges through several core design principles:</p>
+            <div class="comp-container">
+                <div class="comp-box spring-box">
+                    <h3>Spring Boot Approach</h3>
+                    <ul>
+                        <li><strong>Auto-configuration:</strong> Only loads what's needed</li>
+                        <li><strong>Starter dependencies:</strong> Curated, compatible dependencies</li>
+                        <li><strong>Conditional loading:</strong> Components load only when required</li>
+                        <li><strong>Sensible defaults:</strong> Pre-optimized configurations</li>
+                        <li><strong>Production-ready metrics:</strong> Memory monitoring built-in</li>
+                    </ul>
+                </div>
+                <div class="comp-box manual-box">
+                    <h3>Manual Configuration Approach</h3>
+                    <ul>
+                        <li><strong>Explicit configuration:</strong> Everything must be declared</li>
+                        <li><strong>Manual dependency management:</strong> Risk of version conflicts</li>
+                        <li><strong>Static loading:</strong> Components typically load at startup</li>
+                        <li><strong>Custom tuning required:</strong> Defaults often not optimized</li>
+                        <li><strong>Add-on monitoring:</strong> Memory metrics require additional setup</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="diagram">
+                <svg viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Spring Boot memory flow -->
+                    <rect x="50" y="50" width="600" height="100" fill="#f1f8e9" stroke="#6db33f" stroke-width="2" rx="10" />
+                    
+                    <!-- Application components -->
+                    <rect x="70" y="70" width="100" height="60" fill="#c5e1a5" stroke="#6db33f" stroke-width="1" rx="5" />
+                    <text x="120" y="105" text-anchor="middle" font-size="14">Application Code</text>
+                    
+                    <!-- Spring Boot -->
+                    <rect x="200" y="70" width="100" height="60" fill="#c5e1a5" stroke="#6db33f" stroke-width="1" rx="5" />
+                    <text x="250" y="105" text-anchor="middle" font-size="14">Spring Boot Starter</text>
+                    
+                    <!-- Auto-configuration -->
+                    <rect x="330" y="70" width="120" height="60" fill="#c5e1a5" stroke="#6db33f" stroke-width="1" rx="5" />
+                    <text x="390" y="105" text-anchor="middle" font-size="14">Auto-configuration</text>
+                    
+                    <!-- Optimized Result -->
+                    <rect x="480" y="70" width="150" height="60" fill="#c5e1a5" stroke="#6db33f" stroke-width="1" rx="5" />
+                    <text x="555" y="95" text-anchor="middle" font-size="14">Optimized Memory</text>
+                    <text x="555" y="115" text-anchor="middle" font-size="14">Footprint</text>
+                    
+                    <!-- Flow arrows -->
+                    <line x1="170" y1="100" x2="200" y2="100" stroke="#333" stroke-width="2" />
+                    <polygon points="200,100 190,95 190,105" fill="#333" />
+                    
+                    <line x1="300" y1="100" x2="330" y2="100" stroke="#333" stroke-width="2" />
+                    <polygon points="330,100 320,95 320,105" fill="#333" />
+                    
+                    <line x1="450" y1="100" x2="480" y2="100" stroke="#333" stroke-width="2" />
+                    <polygon points="480,100 470,95 470,105" fill="#333" />
+                </svg>
+            </div>
+            <div class="note">
+                <p><strong>Key Benefit:</strong> Spring Boot's "opt-in" approach means your application only loads the classes and creates the objects it actually needs, reducing both heap and metaspace memory footprint.</p>
+            </div>
+        </div>
+
+        <!-- Slide 4: Heap Memory Optimization -->
+        <div class="slide" id="slide4">
+            <h2>Heap Memory Optimization in Spring Boot</h2>
+            <p>Spring Boot provides several features that optimize heap memory usage compared to manual configuration approaches:</p>
+            <div class="bar-chart">
+                <div class="bar" style="width: 60%;">
+                    <span class="bar-label">Spring Boot</span>
+                    <span class="bar-value">~225MB (base)</span>
+                </div>
+                <div class="bar" style="width: 85%;">
+                    <span class="bar-label">Manual Configuration</span>
+                    <span class="bar-value">~320MB (base)</span>
+                </div>
+                <p style="text-align: center; font-style: italic;">Approximate heap usage for a typical web application with database access, based on industry benchmarks</p>
+            </div>
+            <h3>How Spring Boot Optimizes Heap Usage:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Spring Boot Approach</th>
+                        <th>Manual Configuration</th>
+                        <th>Memory Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Bean Lifecycle Management</strong></td>
+                        <td>Lazy initialization options, scope optimization</td>
+                        <td>Often eager initialization of all components</td>
+                        <td>Reduced number of object instances in heap</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Caching Strategy</strong></td>
+                        <td>Optimized caching with sensible defaults</td>
+                        <td>Often excessive or unoptimized caching</td>
+                        <td>Less redundant data in memory</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Connection Pooling</strong></td>
+                        <td>Pre-configured optimal pool sizes</td>
+                        <td>Often oversized connection pools</td>
+                        <td>Fewer connection objects consuming heap</td>
+                    </tr>
+                    <tr>
+                        <td><strong>JSON Serialization</strong></td>
+                        <td>Memory-efficient Jackson configuration</td>
+                        <td>Often unoptimized serialization settings</td>
+                        <td>Reduced temporary object creation</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="note">
+                <p><strong>Example:</strong> A manually configured web application might create all beans at startup and maintain larger connection pools, while Spring Boot can use lazy initialization and right-sized connection pools, reducing heap usage by 20-30%.</p>
+            </div>
+        </div>
+
+        <!-- Slide 5: Metaspace Optimization -->
+        <div class="slide" id="slide5">
+            <h2>Metaspace Optimization in Spring Boot</h2>
+            <p>Spring Boot significantly reduces metaspace usage compared to manual framework integration through several mechanisms:</p>
+            <div class="bar-chart">
+                <div class="bar" style="width: 55%;">
+                    <span class="bar-label">Spring Boot</span>
+                    <span class="bar-value">~120MB (typical)</span>
+                </div>
+                <div class="bar" style="width: 90%;">
+                    <span class="bar-label">Manual Configuration</span>
+                    <span class="bar-value">~180MB (typical)</span>
+                </div>
+                <p style="text-align: center; font-style: italic;">Approximate metaspace usage for a typical web application with database access, based on industry benchmarks</p>
+            </div>
+            <h3>How Spring Boot Optimizes Metaspace:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Spring Boot Approach</th>
+                        <th>Manual Configuration</th>
+                        <th>Memory Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Conditional Configuration</strong></td>
+                        <td>Classes only loaded when conditions are met</td>
+                        <td>All configuration classes typically loaded</td>
+                        <td>Fewer class definitions in metaspace</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dependency Management</strong></td>
+                        <td>Curated dependencies without duplicates</td>
+                        <td>Risk of multiple versions of similar libraries</td>
+                        <td>Fewer redundant classes loaded</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Annotation Processing</strong></td>
+                        <td>Optimized annotation scanning paths</td>
+                        <td>Often broad component scanning</td>
+                        <td>Reduced proxy classes and metadata</td>
+                    </tr>
+                    <tr>
+                        <td><strong>XML Configuration</strong></td>
+                        <td>Minimal or no XML parsing needed</td>
+                        <td>Often heavy XML configuration parsing</td>
+                        <td>Fewer parser and DOM classes loaded</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="warning">
+                <p><strong>Manual Configuration Risk:</strong> Loading multiple versions of libraries or unnecessary frameworks can cause metaspace to grow dramatically, leading to <code>OutOfMemoryError: Metaspace</code> issues in production environments.</p>
+            </div>
+        </div>
+
+        <!-- Slide 6: Practical Example - Web Application with DB Access -->
+        <div class="slide" id="slide6">
+            <h2>Practical Example: Web Application with Database Access</h2>
+            <p>Let's compare the memory footprint of a typical web application with database access implemented in Spring Boot versus manual configuration:</p>
+            <div class="comp-container">
+                <div class="comp-box spring-box">
+                    <h3>Spring Boot Approach</h3>
+                    <p><strong>Dependencies:</strong></p>
+                    <pre>spring-boot-starter-web
+spring-boot-starter-data-jpa
+h2database</pre>
+                    <p><strong>Code Example:</strong></p>
+                    <pre>@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(
+            Application.class, args);
+    }
+}</pre>
+                    <p><strong>Memory Metrics:</strong></p>
+                    <ul>
+                        <li>Heap Usage: ~225MB</li>
+                        <li>Metaspace: ~120MB</li>
+                        <li>Classes Loaded: ~9,500</li>
+                    </ul>
+                </div>
+                <div class="comp-box manual-box">
+                    <h3>Manual Configuration Approach</h3>
+                    <p><strong>Dependencies:</strong></p>
+                    <pre>spring-webmvc
+spring-orm
+hibernate-core
+hibernate-entitymanager
+tomcat-embed-core
+jackson-databind
+commons-dbcp2
+h2database</pre>
+                    <p><strong>Code Example:</strong></p>
+                    <pre>@Configuration
+@ComponentScan
+@EnableWebMvc
+@EnableTransactionManagement
+public class AppConfig {
+    // Many bean definitions needed
+    @Bean
+    public DataSource dataSource() { ... }
+    @Bean
+    public LocalContainerEntityManagerFactoryBean 
+        entityManagerFactory() { ... }
+    // Many more configurations...
+}</pre>
+                    <p><strong>Memory Metrics:</strong></p>
+                    <ul>
+                        <li>Heap Usage: ~320MB</li>
+                        <li>Metaspace: ~180MB</li>
+                        <li>Classes Loaded: ~12,800</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="note">
+                <p><strong>Key Observation:</strong> Spring Boot application requires ~30% less heap, ~33% less metaspace, and loads ~25% fewer classes than the manually configured equivalent.</p>
+            </div>
+        </div>
+
+        <!-- Slide 7: Granular Memory Optimization Control -->
+        <div class="slide" id="slide7">
+            <h2>Granular Memory Optimization Control in Spring Boot</h2>
+            <p>Beyond the default optimizations, Spring Boot provides fine-grained control over memory usage:</p>
+            <h3>Advanced Memory Optimization Features:</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Implementation</th>
+                        <th>Memory Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Lazy Initialization</strong></td>
+                        <td><code>spring.main.lazy-initialization=true</code></td>
+                        <td>Reduces initial heap usage by deferring object creation until needed</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bean Overriding</strong></td>
+                        <td><code>spring.main.allow-bean-definition-overriding=false</code></td>
+                        <td>Prevents duplicate bean instances by failing fast on configuration errors</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Custom Component Scanning</strong></td>
+                        <td><code>@ComponentScan(basePackages="com.example.app")</code></td>
+                        <td>Reduces metaspace usage by limiting class scanning</td>
+                    </tr>
+                    <tr>
+                        <td><strong>HTTP Session Management</strong></td>
+                        <td><code>server.servlet.session.timeout=15m</code></td>
+                        <td>Reduces heap usage by limiting session object lifetimes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tomcat Connection Pool Sizing</strong></td>
+                        <td><code>spring.datasource.tomcat.max-active=10</code></td>
+                        <td>Optimizes heap usage by right-sizing connection objects</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="comp-container">
+                <div class="comp-box spring-box">
+                    <h3>Production-Ready Metrics</h3>
+                    <p>Spring Boot Actuator provides built-in memory monitoring:</p>
+                    <pre>management.endpoints.web.exposure.include=metrics
+management.endpoint.metrics.enabled=true
+management.metrics.export.prometheus.enabled=true</pre>
+                    <p>This enables endpoints like:</p>
+                    <code>/actuator/metrics/jvm.memory.used</code>
+                </div>
+                <div class="comp-box manual-box">
+                    <h3>Manual Metrics Configuration</h3>
+                    <p>Manually configured applications require additional setup:</p>
+                    <pre>// Initialize Micrometer registry
+MeterRegistry registry = new SimpleMeterRegistry();
+
+// Configure JVM metrics collection
+new JvmMemoryMetrics().bindTo(registry);
+new JvmGcMetrics().bindTo(registry);
+
+// Custom endpoint implementation needed
+// for exposing the metrics</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Case Studies and Real-World Data -->
+        <div class="slide" id="slide8">
+            <h2>Case Studies: Memory Optimization with Spring Boot</h2>
+            <p>Real-world applications demonstrate significant memory improvements when migrating to Spring Boot:</p>
+            <div class="diagram">
+                <svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background -->
+                    <rect x="50" y="50" width="600" height="200" fill="#f5f5f5" stroke="#ccc" stroke-width="1" rx="5" />
+                    
+                    <!-- X and Y axes -->
+                    <line x1="100" y1="220" x2="600" y2="220" stroke="#333" stroke-width="2" />
+                    <line x1="100" y1="80" x2="100" y2="220" stroke="#333" stroke-width="2" />
+                    
+                    <!-- X-axis labels -->
+                    <text x="150" y="240" text-anchor="middle">Case 1</text>
+                    <text x="250" y="240" text-anchor="middle">Case 2</text>
+                    <text x="350" y="240" text-anchor="middle">Case 3</text>
+                    <text x="450" y="240" text-anchor="middle">Case 4</text>
+                    <text x="550" y="240" text-anchor="middle">Case 5</text>
+                    
+                    <!-- Y-axis labels -->
+                    <text x="80" y="220" text-anchor="end">0%</text>
+                    <text x="80" y="180" text-anchor="end">10%</text>
+                    <text x="80" y="140" text-anchor="end">20%</text>
+                    <text x="80" y="100" text-anchor="end">30%</text>
+                    <text x="80" y="60" text-anchor="end">40%</text>
+                    
+                    <!-- Bars for memory reduction percentages -->
+                    <!-- Case 1 -->
+                    <rect x="130" y="150" width="40" height="70" fill="#6db33f" />
+                    <text x="150" y="145" text-anchor="middle" font-size="12">18%</text>
+                    
+                    <!-- Case 2 -->
+                    <rect x="230" y="130" width="40" height="90" fill="#6db33f" />
+                    <text x="250" y="125" text-anchor="middle" font-size="12">23%</text>
